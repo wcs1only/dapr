@@ -187,7 +187,7 @@ jobs:
             await github.repos.createDispatchEvent({
               owner: clientPayload.issue.owner,
               repo: clientPayload.issue.repo,
-              event_type: "upload-artifacts",
+              event_type: "comment-e2e-results",
               client_payload: clientPayload,
             });
 
