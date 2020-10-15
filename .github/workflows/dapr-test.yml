@@ -43,7 +43,7 @@ jobs:
           export DAPR_CONTAINER_LOG_PATH=`pwd`/container_logs/${{ matrix.target_os }}_${{ matrix.target_arch }}
           echo "DAPR_CONTAINER_LOG_PATH=`pwd`/container_logs/${{ matrix.target_os }}_${{ matrix.target_arch }}" >> $GITHUB_ENV
           mkdir -p $DAPR_CONTAINER_LOG_PATH
-          touch $DAPR_CONTAINER_LOG_PATH/README
+          echo " ${DAPR_CONTAINER_LOG_PATH}/README" | tee $DAPR_CONTAINER_LOG_PATH/README
           echo "TEST_CLUSTER=foo" >> $GITHUB_ENV
         shell: bash
       - name: Set up for scheduled test
