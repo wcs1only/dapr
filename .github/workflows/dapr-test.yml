@@ -176,11 +176,11 @@ jobs:
           script: |
             const jobContext = JSON.parse(process.env.JOB_CONTEXT);
             const clientPayload = {
-              job_status: jobContext.status.toLowerCase();
-              target_os: process.env.TARGET_OS;
+              job_status: jobContext.status.toLowerCase(),
+              target_os: process.env.TARGET_OS,
               test_run_id: process.env.GITHUB_RUN_ID;
-              issue: jobContext.payload.client_payload.issue,
-              artifact_name: ${{ matrix.target_os }}_${{ matrix.target_arch }}_container_log
+              issue: context.payload.issue,
+              artifact_name: ${{ matrix.target_os }}_${{ matrix.target_arch }}_container_log,
             };
   
             // Fire repository_dispatch event to trigger e2e test
