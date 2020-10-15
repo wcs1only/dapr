@@ -185,7 +185,7 @@ jobs:
   
             // Fire repository_dispatch event to trigger e2e test
             await github.repos.createDispatchEvent({
-              owner: issue.owner,
+              owner: clientPayload.issue.owner,
               repo: clientPayload.issue.repo,
               event_type: "upload-artifacts",
               client_payload: clientPayload,
