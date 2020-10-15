@@ -191,7 +191,7 @@ jobs:
               client_payload: clientPayload,
             });
 
-            console.log(`Current Job Status: ${jobStatus}`);
+            console.log(`Current Job Status: ${clientPayload.job_status}`);
       - name: Clean up ${{ env.TEST_CLUSTER }} cluster
         if: always() && env.TEST_CLUSTER != ''
         run: make clean-test-env
