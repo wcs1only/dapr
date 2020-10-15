@@ -40,8 +40,8 @@ jobs:
     steps:
       - name: Set up container log path
         run: |
-          export DAPR_CONTAINER_LOG_PATH=`pwd`/container_logs/${{ matrix.target_os }}_${{ matrix.target_arch }}
-          echo "DAPR_CONTAINER_LOG_PATH=`pwd`/container_logs/${{ matrix.target_os }}_${{ matrix.target_arch }}" >> $GITHUB_ENV
+          export DAPR_CONTAINER_LOG_PATH=/tmp/container_logs/${{ matrix.target_os }}_${{ matrix.target_arch }}
+          echo "DAPR_CONTAINER_LOG_PATH=/tmp/container_logs/${{ matrix.target_os }}_${{ matrix.target_arch }}" >> $GITHUB_ENV
           mkdir -p $DAPR_CONTAINER_LOG_PATH
           echo " ${DAPR_CONTAINER_LOG_PATH}/test.log" | tee $DAPR_CONTAINER_LOG_PATH/test.log
           echo "TEST_CLUSTER=foo" >> $GITHUB_ENV
@@ -170,7 +170,7 @@ jobs:
         if: always() && github.event_name == 'repository_dispatch' && env.TEST_CLUSTER != ''
         env:
           JOB_CONTEXT: ${{ toJson(job) }}
-        uses: actions/github-script@v3.0.0
+        uses: actions/github-script@v3
         with:
           github-token: ${{secrets.DAPR_BOT_TOKEN}}
           script: |
@@ -186,8 +186,8 @@ jobs:
               repo: testPayload.issue.repo,
               run_id: process.env.GITHUB_RUN_ID,
             });
-
-            console.log(`Artifacts: ${response.artifacts[0].name} ${response.artifacts[0].archive_download_url}`);
+            console.log(JSON.stringify(response, null, 2));
+            //console.log(`Artifacts: ${response.artifacts[0].name} ${response.artifacts[0].archive_download_url}`);
 
             var message = "";
 
