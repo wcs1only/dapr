@@ -1,0 +1,77 @@
+
+# ------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+# ------------------------------------------------------------
+
+name: comment-e2e-results
+
+on:
+  repository_dispatch:
+    types: [comment-e2e-results]
+
+jobs:
+  comment-e2e-results:
+    steps:
+      - name: Add test result comment to PR
+        if: always() && github.event_name == 'repository_dispatch' && env.TEST_CLUSTER != ''
+        env:
+          JOB_CONTEXT: ${{ toJson(job) }}
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.DAPR_BOT_TOKEN}}
+          script: |
+            const context = JSON.parse(process.env.JOB_CONTEXT);
+            const clientPayload = context.payload.client_payload;
+            const jobStatus = clientPayload.job_status;
+            const targetOs = clientPayload.target_os;
+            const artifactTimeoutMs = 1000;
+            const maxRetries = 120;
+            const artifactName = clientPayload.artifact_name;
+
+            var container_log_url = '';
+            console.log(`Current Job Status: ${jobStatus}`);
+            console.log("Waiting for container logs to become available");
+
+            while (container_log_url == '') {
+              await new Promise( resolve => setTimeout(resolve, artifactTimeoutMs) );
+  
+              response = await github.actions.listWorkflowRunArtifacts({
+                owner: clientPayload.issue.owner,
+                repo: clientPayload.issue.repo,
+                run_id: clientPayload.testRunId,
+              });
+              console.log(JSON.stringify(response, null, 2));
+  
+              for (artifact in response.artifacts) {
+                if (artifact.name == artifactName) {
+                  container_log_url = artifact.archive_download_url;
+                }
+              }
+            }
+            var message = "";
+
+            const checkLink = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${clientPayload.testRunId}`;
+
+            if (jobStatus == "cancelled") {
+              message = `End-to-end tests cancelled on ${targetOs}. Please check the [build logs](${checkLink})`;
+            } else if (jobStatus == "success") {
+              message = `Congrats! All [end-to-end tests](${checkLink}) have passed on ${targetOs}. Thanks for your contribution!`;
+            } else if (jobStatus == "failure") {
+              message = `End-to-end tests failed on ${targetOs}. Please check the [build logs](${checkLink})`;
+            }
+
+            if (message && container_log_url) {
+              message += ` & [container logs](${container_log_url})`
+            } else {
+              console.log("Did not find container logs for the current job")
+            }
+
+            if (message) {
+              await github.issues.createComment({
+                owner: clientPayload.issue.owner,
+                repo: clientPayload.issue.repo,
+                issue_number: clientPayload.issue.number,
+                body: message
+              });
+            }

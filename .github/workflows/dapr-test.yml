@@ -174,59 +174,24 @@ jobs:
         with:
           github-token: ${{secrets.DAPR_BOT_TOKEN}}
           script: |
-            const testPayload = context.payload.client_payload;
             const jobContext = JSON.parse(process.env.JOB_CONTEXT);
-            const jobStatus = jobContext.status.toLowerCase();
-            const targetOs = process.env.TARGET_OS;
-            const artifactTimeoutMs = 1000;
-            const maxRetries = 120;
+            const clientPayload = {
+              job_status: jobContext.status.toLowerCase();
+              target_os: process.env.TARGET_OS;
+              test_run_id: process.env.GITHUB_RUN_ID;
+              issue: jobContext.payload.client_payload.issue,
+              artifact_name: ${{ matrix.target_os }}_${{ matrix.target_arch }}_container_log
+            };
+  
+            // Fire repository_dispatch event to trigger e2e test
+            await github.repos.createDispatchEvent({
+              owner: issue.owner,
+              repo: clientPayload.issue.repo,
+              event_type: "upload-artifacts",
+              client_payload: clientPayload,
+            });
 
-            var container_log_url = '';
             console.log(`Current Job Status: ${jobStatus}`);
-            console.log("Waiting for container logs to become available");
-
-            while (container_log_url == '') {
-              await new Promise( resolve => setTimeout(resolve, artifactTimeoutMs) );
-  
-              response = await github.actions.listWorkflowRunArtifacts({
-                owner: testPayload.issue.owner,
-                repo: testPayload.issue.repo,
-                run_id: process.env.GITHUB_RUN_ID,
-              });
-              console.log(JSON.stringify(response, null, 2));
-  
-              for (artifact in response.artifacts) {
-                if (artifact.name = `${{ matrix.target_os }}_${{ matrix.target_arch }}_container_logs`) {
-                  container_log_url = artifact.archive_download_url;
-                }
-              }
-            }
-            var message = "";
-
-            const checkLink = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-
-            if (jobStatus == "cancelled") {
-              message = `End-to-end tests cancelled on ${targetOs}. Please check the [build logs](${checkLink})`;
-            } else if (jobStatus == "success") {
-              message = `Congrats! All [end-to-end tests](${checkLink}) have passed on ${targetOs}. Thanks for your contribution!`;
-            } else if (jobStatus == "failure") {
-              message = `End-to-end tests failed on ${targetOs}. Please check the [build logs](${checkLink})`;
-            }
-
-            if (message && container_log_url) {
-              message += ` & [container logs](${container_log_url})`
-            } else {
-              console.log("Did not find container logs for the current job")
-            }
-
-            if (message) {
-              await github.issues.createComment({
-                owner: testPayload.issue.owner,
-                repo: testPayload.issue.repo,
-                issue_number: testPayload.issue.number,
-                body: message
-              });
-            }
       - name: Clean up ${{ env.TEST_CLUSTER }} cluster
         if: always() && env.TEST_CLUSTER != ''
         run: make clean-test-env
