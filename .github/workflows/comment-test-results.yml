@@ -44,7 +44,7 @@ jobs:
                 run_id: clientPayload.test_run_id,
               });
 
-              for (artifact in response.data.artifacts) {
+              for (var artifact of response.data.artifacts) {
                 console.log(artifactName);
                 console.log(JSON.stringify(artifact, null, 2));
                 if (artifact.name == artifactName) {
