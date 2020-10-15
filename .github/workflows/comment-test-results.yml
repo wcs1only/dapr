@@ -12,16 +12,13 @@ on:
 
 jobs:
   comment-e2e-results:
+    runs-on: ubuntu-latest
     steps:
-      - name: Add test result comment to PR
-        if: always() && github.event_name == 'repository_dispatch' && env.TEST_CLUSTER != ''
-        env:
-          JOB_CONTEXT: ${{ toJson(job) }}
+      - name: Gather test artifacts and comment to PR
         uses: actions/github-script@v3
         with:
           github-token: ${{secrets.DAPR_BOT_TOKEN}}
           script: |
-            const context = JSON.parse(process.env.JOB_CONTEXT);
             const clientPayload = context.payload.client_payload;
             const jobStatus = clientPayload.job_status;
             const targetOs = clientPayload.target_os;
