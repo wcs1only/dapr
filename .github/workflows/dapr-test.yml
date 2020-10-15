@@ -156,6 +156,10 @@ jobs:
       - name: Run E2E tests
         if: env.TEST_CLUSTER != ''
         run: make test-e2e-all
+      - name: List artifacts
+        if: always()
+        run: |
+          ls -lha $DAPR_CONTAINER_LOG_PATH
       - name: Upload container logs
         if: always()
         uses: actions/upload-artifact@master
@@ -183,7 +187,7 @@ jobs:
               run_id: process.env.GITHUB_RUN_ID,
             });
 
-            console.log(`Artifacts: ${response}`);
+            console.log(`Artifacts: ${response.artifacts[0].name} ${response.artifacts[0].archive_download_url}`);
 
             var message = "";
 
