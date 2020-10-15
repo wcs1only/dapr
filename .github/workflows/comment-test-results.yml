@@ -39,7 +39,7 @@ jobs:
               response = await github.actions.listWorkflowRunArtifacts({
                 owner: clientPayload.issue.owner,
                 repo: clientPayload.issue.repo,
-                run_id: clientPayload.testRunId,
+                run_id: clientPayload.test_run_id,
               });
               console.log(JSON.stringify(response, null, 2));
   

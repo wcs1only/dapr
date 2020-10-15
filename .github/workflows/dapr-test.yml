@@ -178,7 +178,7 @@ jobs:
             const clientPayload = {
               job_status: jobContext.status.toLowerCase(),
               target_os: process.env.TARGET_OS,
-              test_run_id: process.env.GITHUB_RUN_ID;
+              test_run_id: process.env.GITHUB_RUN_ID,
               issue: context.payload.issue,
               artifact_name: ${{ matrix.target_os }}_${{ matrix.target_arch }}_container_log,
             };
