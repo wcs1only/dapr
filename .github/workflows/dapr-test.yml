@@ -180,7 +180,7 @@ jobs:
               target_os: process.env.TARGET_OS,
               test_run_id: process.env.GITHUB_RUN_ID,
               issue: context.payload.client_payload.issue,
-              artifact_name: `${{ matrix.target_os }}_${{ matrix.target_arch }}_container_log`,
+              artifact_name: `${{ matrix.target_os }}_${{ matrix.target_arch }}_container_logs`,
             };
   
             // Fire repository_dispatch event to trigger e2e test

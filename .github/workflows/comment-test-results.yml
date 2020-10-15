@@ -46,7 +46,7 @@ jobs:
 
               for (var artifact of response.data.artifacts) {
                 console.log(artifactName);
-                console.log(JSON.stringify(artifact, null, 2));
+                console.log(artifact.name);
                 if (artifact.name == artifactName) {
                   console.log("Match!");
                   container_log_url = artifact.archive_download_url;
