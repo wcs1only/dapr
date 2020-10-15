@@ -164,7 +164,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@master
         with:
-          name: ${{ matrix.k8s-version }}_${{ matrix.mode}}_container_logs
+          name: ${{ matrix.target_os }}_${{ matrix.target_arch }}_container_logs
           path: ${{ env.DAPR_CONTAINER_LOG_PATH }}
       - name: Add test result comment to PR
         if: always() && github.event_name == 'repository_dispatch' && env.TEST_CLUSTER != ''
@@ -178,6 +178,11 @@ jobs:
             const jobContext = JSON.parse(process.env.JOB_CONTEXT);
             const jobStatus = jobContext.status.toLowerCase();
             const targetOs = process.env.TARGET_OS;
+            const artifactTimeoutMs = 5000;
+
+            var container_log_url = '';
+
+            await new Promise( resolve => setTimeout(resolve, artifactTimeoutMs) );
 
             console.log(`Current Job Status: ${jobStatus}`);
 
@@ -187,7 +192,12 @@ jobs:
               run_id: process.env.GITHUB_RUN_ID,
             });
             console.log(JSON.stringify(response, null, 2));
-            //console.log(`Artifacts: ${response.artifacts[0].name} ${response.artifacts[0].archive_download_url}`);
+
+            for (artifact in response.artifacts) {
+              if (artifact.name = `${{ matrix.target_os }}_${{ matrix.target_arch }}_container_logs`) {
+                container_log_url = artifact.archive_download_url;
+              }
+            }
 
             var message = "";
 
@@ -199,6 +209,10 @@ jobs:
               message = `Congrats! All [end-to-end tests](${checkLink}) have passed on ${targetOs}. Thanks for your contribution!`;
             } else if (jobStatus == "failure") {
               message = `End-to-end tests failed on ${targetOs}. Please check the [build logs](${checkLink})`;
+            }
+
+            if (message && container_log_url) {
+              message += ` & [container logs](${container_log_url})`
             }
 
             if (message) {
