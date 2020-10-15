@@ -48,7 +48,7 @@ jobs:
                 console.log(artifactName);
                 console.log(JSON.stringify(artifact, null, 2));
                 if (artifact.name == artifactName) {
-                  console.log("Match!"));
+                  console.log("Match!");
                   container_log_url = artifact.archive_download_url;
                 }
               }
