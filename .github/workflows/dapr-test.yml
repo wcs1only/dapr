@@ -178,27 +178,29 @@ jobs:
             const jobContext = JSON.parse(process.env.JOB_CONTEXT);
             const jobStatus = jobContext.status.toLowerCase();
             const targetOs = process.env.TARGET_OS;
-            const artifactTimeoutMs = 5000;
+            const artifactTimeoutMs = 1000;
+            const maxRetries = 120;
 
             var container_log_url = '';
-
-            await new Promise( resolve => setTimeout(resolve, artifactTimeoutMs) );
-
             console.log(`Current Job Status: ${jobStatus}`);
+            console.log("Waiting for container logs to become available");
 
-            response = await github.actions.listWorkflowRunArtifacts({
-              owner: testPayload.issue.owner,
-              repo: testPayload.issue.repo,
-              run_id: process.env.GITHUB_RUN_ID,
-            });
-            console.log(JSON.stringify(response, null, 2));
-
-            for (artifact in response.artifacts) {
-              if (artifact.name = `${{ matrix.target_os }}_${{ matrix.target_arch }}_container_logs`) {
-                container_log_url = artifact.archive_download_url;
+            while (container_log_url == '') {
+              await new Promise( resolve => setTimeout(resolve, artifactTimeoutMs) );
+  
+              response = await github.actions.listWorkflowRunArtifacts({
+                owner: testPayload.issue.owner,
+                repo: testPayload.issue.repo,
+                run_id: process.env.GITHUB_RUN_ID,
+              });
+              console.log(JSON.stringify(response, null, 2));
+  
+              for (artifact in response.artifacts) {
+                if (artifact.name = `${{ matrix.target_os }}_${{ matrix.target_arch }}_container_logs`) {
+                  container_log_url = artifact.archive_download_url;
+                }
               }
             }
-
             var message = "";
 
             const checkLink = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
@@ -213,6 +215,8 @@ jobs:
 
             if (message && container_log_url) {
               message += ` & [container logs](${container_log_url})`
+            } else {
+              console.log("Did not find container logs for the current job")
             }
 
             if (message) {
