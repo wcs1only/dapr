@@ -43,11 +43,12 @@ jobs:
                 repo: clientPayload.issue.repo,
                 run_id: clientPayload.test_run_id,
               });
-              console.log(artifactName);
-              console.log(JSON.stringify(response, null, 2));
 
               for (artifact in response.data.artifacts) {
+                console.log(artifactName);
+                console.log(JSON.stringify(artifact, null, 2));
                 if (artifact.name == artifactName) {
+                  console.log("Match!"));
                   container_log_url = artifact.archive_download_url;
                 }
               }
