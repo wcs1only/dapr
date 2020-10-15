@@ -23,24 +23,30 @@ jobs:
             const jobStatus = clientPayload.job_status;
             const targetOs = clientPayload.target_os;
             const artifactTimeoutMs = 1000;
-            const maxRetries = 120;
             const artifactName = clientPayload.artifact_name;
+            var retries = 300;
 
             var container_log_url = '';
-            console.log(`Current Job Status: ${jobStatus}`);
             console.log("Waiting for container logs to become available");
 
             while (container_log_url == '') {
+              if (retries <= 0) {
+                console.log("Gave up waiting for container logs");
+                break;
+              }
+
+              retries--;
               await new Promise( resolve => setTimeout(resolve, artifactTimeoutMs) );
-  
+
               response = await github.actions.listWorkflowRunArtifacts({
                 owner: clientPayload.issue.owner,
                 repo: clientPayload.issue.repo,
                 run_id: clientPayload.test_run_id,
               });
+              console.log(artifactName);
               console.log(JSON.stringify(response, null, 2));
-  
-              for (artifact in response.artifacts) {
+
+              for (artifact in response.data.artifacts) {
                 if (artifact.name == artifactName) {
                   container_log_url = artifact.archive_download_url;
                 }
@@ -60,8 +66,6 @@ jobs:
 
             if (message && container_log_url) {
               message += ` & [container logs](${container_log_url})`
-            } else {
-              console.log("Did not find container logs for the current job")
             }
 
             if (message) {
