@@ -45,6 +45,7 @@ jobs:
           mkdir -p $DAPR_CONTAINER_LOG_PATH
           echo " ${DAPR_CONTAINER_LOG_PATH}/README" | tee $DAPR_CONTAINER_LOG_PATH/README
           echo "TEST_CLUSTER=foo" >> $GITHUB_ENV
+          ls -lha $DAPR_CONTAINER_LOG_PATH
         shell: bash
       - name: Set up for scheduled test
         if: github.event_name != 'repository_dispatch'
@@ -176,10 +177,10 @@ jobs:
 
             console.log(`Current Job Status: ${jobStatus}`);
 
-            respose = github.actions.listWorkflowRunArtifacts({
+            response = await github.actions.listWorkflowRunArtifacts({
               owner: testPayload.issue.owner,
               repo: testPayload.issue.repo,
-              run_id: ${process.env.GITHUB_RUN_ID},
+              run_id: process.env.GITHUB_RUN_ID,
             });
 
             console.log(`Artifacts: ${response}`);
