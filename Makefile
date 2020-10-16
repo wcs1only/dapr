@@ -210,8 +210,8 @@ release: build archive
 ################################################################################
 .PHONY: test
 test:
-	go test ./pkg/... $(COVERAGE_OPTS)
-	go test ./tests/...
+	go test ./pkg/... ./tests/... $(COVERAGE_OPTS)
+	#go test ./tests/... $(COVERAGE_OPTS)
 
 ################################################################################
 # Target: lint                                                                 #

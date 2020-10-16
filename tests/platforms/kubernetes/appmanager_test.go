@@ -658,3 +658,60 @@ func TestDeleteService(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteContainerLogs(t *testing.T) {
+	// fake test values
+	testApp := testAppDescription()
+	client := newFakeKubeClient()
+
+	objMeta := metav1.ObjectMeta{
+		Name:      testApp.AppName,
+		Namespace: testNamespace,
+		Labels: map[string]string{
+			TestAppLabelKey: testApp.AppName,
+		},
+	}
+	// Set up reactor to fake verb
+	client.ClientSet.(*fake.Clientset).AddReactor(
+		"list",
+		"pods",
+		func(action core.Action) (bool, runtime.Object, error) {
+			ns := action.GetNamespace()
+			assert.Equal(t, testNamespace, ns)
+
+			singlePod := apiv1.Pod{
+				ObjectMeta: objMeta,
+				Spec: apiv1.PodSpec{
+					Containers: []apiv1.Container{
+						{
+							Name:  "daprd",
+							Image: "daprio/daprd:latest",
+						},
+						{
+							Name:  testApp.AppName,
+							Image: fmt.Sprintf("%s/%s", testApp.RegistryName, testApp.ImageName),
+						},
+					},
+				},
+			}
+
+			podList := &apiv1.PodList{
+				Items: []apiv1.Pod{singlePod},
+			}
+
+			return true, podList, nil
+		})
+
+	client.ClientSet.(*fake.Clientset).AddReactor(
+		getVerb,
+		"pods",
+		func(action core.Action) (bool, runtime.Object, error) {
+			ns := action.GetNamespace()
+			assert.Equal(t, testNamespace, ns)
+			return true, nil, nil
+		})
+
+	appManager := NewAppManager(client, testNamespace, testApp)
+	err := appManager.SaveContainerLogs()
+	assert.NoError(t, err)
+}
