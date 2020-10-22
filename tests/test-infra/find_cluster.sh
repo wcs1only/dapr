@@ -30,9 +30,20 @@ fi
 echo "Selected Dapr Test Resource group: $DAPR_TEST_RESOURCE_GROUP"
 echo "Selected Kubernetes Namespace: $DAPR_TEST_NAMESPACE"
 
+az config set extension.use_dynamic_install=yes_without_prompt
+az extension add --upgrade -n aks-preview
+
 # Find the available cluster
 for clustername in ${testclusterpool[@]}; do
     echo "Scanning $clustername ..."
+
+    clusterstate=`az aks show --name LinuxWin --resource-group wistanle-k8s --query "powerState.code" -o tsv`
+    echo "The cluster '$clustername' is '$clusterstate'"
+
+    if [[ $clusterstate != 'Running' ]]; then
+	echo "Attempting to start '$clustername'"
+        az aks start --name $clustername --resource-group $DAPR_TEST_RESOURCE_GROUP || continue
+    fi
 
     echo "Switching to $clustername context..."
     # Switch to cluster context
