@@ -37,7 +37,7 @@ az extension add --upgrade -n aks-preview
 for clustername in ${testclusterpool[@]}; do
     echo "Scanning $clustername ..."
 
-    clusterstate=`az aks show --name LinuxWin --resource-group wistanle-k8s --query "powerState.code" -o tsv`
+    clusterstate=`az aks show --name ${clustername} --resource-group wistanle-k8s --query "powerState.code" -o tsv`
     echo "The cluster '$clustername' is '$clusterstate'"
 
     if [[ $clusterstate != 'Running' ]]; then
