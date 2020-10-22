@@ -10,16 +10,14 @@
 # The test cluster pool for e2e test
 # TODO: Add more aks test clusters
 testclusterpool=(
-    "dapr-aks-e2e-05"
-    "dapr-aks-e2e-06"
-    "dapr-aks-e2e-07"
-    "dapr-aks-e2e-08"
+    "LinuxWin"
+    "LinuxWin2"
 )
 
 # Define max e2e test timeout, 1.5 hours
 [ -z "$MAX_TEST_TIMEOUT" ] && MAX_TEST_TIMEOUT=5400
 
-[ -z "$DAPR_TEST_RESOURCE_GROUP" ] && DAPR_TEST_RESOURCE_GROUP="dapre2e"
+[ -z "$DAPR_TEST_RESOURCE_GROUP" ] && DAPR_TEST_RESOURCE_GROUP="wistanle-k8s"
 
 if [ -z "$DAPR_TEST_NAMESPACE" ]; then
     if [ ! -z "$DAPR_NAMESPACE" ]; then
