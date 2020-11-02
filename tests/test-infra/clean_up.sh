@@ -17,4 +17,5 @@ done
 echo "Trying to delete namespace..."
 kubectl delete namespace $1 --timeout=10m
 
+az aks stop --name `kubectl config current-context` --resource-group wistanle-k8s &
 exit 0
