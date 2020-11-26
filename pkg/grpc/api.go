@@ -316,26 +316,27 @@ func (a *api) GetBulkState(ctx context.Context, in *runtimev1pb.GetBulkStateRequ
 	limiter := concurrency.NewLimiter(int(in.Parallelism))
 
 	for _, k := range in.Keys {
+		i := &runtimev1pb.BulkStateItem{
+			Key: k,
+		}
+		resp.Items = append(resp.Items, i)
 		fn := func(param interface{}) {
+			item := param.(*runtimev1pb.BulkStateItem)
 			req := state.GetRequest{
-				Key:      a.getModifiedStateKey(param.(string)),
+				Key:      a.getModifiedStateKey(item.Key),
 				Metadata: in.Metadata,
 			}
 
 			r, err := store.Get(&req)
-			item := &runtimev1pb.BulkStateItem{
-				Key: param.(string),
-			}
 			if err != nil {
 				item.Error = err.Error()
 			} else if r != nil {
 				item.Data = r.Data
 				item.Etag = r.ETag
 			}
-			resp.Items = append(resp.Items, item)
 		}
 
-		limiter.Execute(fn, k)
+		limiter.Execute(fn, i)
 	}
 	limiter.Wait()
 

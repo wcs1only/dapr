@@ -961,6 +961,111 @@ func TestGetState(t *testing.T) {
 	}
 }
 
+func TestBulkGetState(t *testing.T) {
+	fakeStore := &daprt.MockStateStore{}
+	fakeStore.On("Get", mock.MatchedBy(func(req *state.GetRequest) bool {
+		return req.Key == "fakeAPI||good-key"
+	})).Return(
+		&state.GetResponse{
+			Data: []byte("test-data"),
+			ETag: "test-etag",
+		}, nil)
+	fakeStore.On("Get", mock.MatchedBy(func(req *state.GetRequest) bool {
+		return req.Key == "fakeAPI||error-key"
+	})).Return(
+		nil,
+		errors.New("failed to get state with error-key"))
+
+	fakeAPI := &api{
+		id:          "fakeAPI",
+		stateStores: map[string]state.Store{"store1": fakeStore},
+	}
+	port, _ := freeport.GetFreePort()
+	server := startDaprAPIServer(port, fakeAPI, "")
+	defer server.Stop()
+
+	clientConn := createTestClient(port)
+	defer clientConn.Close()
+
+	client := runtimev1pb.NewDaprClient(clientConn)
+
+	testCases := []struct {
+		testName         string
+		storeName        string
+		keys             []string
+		errorExcepted    bool
+		expectedResponse runtimev1pb.GetBulkStateResponse
+		expectedError    codes.Code
+	}{
+		{
+			testName:      "get bulk state",
+			storeName:     "store1",
+			keys:          []string{"good-key"},
+			errorExcepted: false,
+			expectedResponse: runtimev1pb.GetBulkStateResponse{
+				Items: []*runtimev1pb.BulkStateItem{
+					{
+						Key:  "good-key",
+						Data: []byte("test-data"),
+						Etag: "test-etag",
+					},
+				},
+			},
+			expectedError: codes.OK,
+		},
+		{
+			testName:      "get bulk state with error",
+			storeName:     "store1",
+			keys:          []string{"good-key", "error-key"},
+			errorExcepted: false,
+			expectedResponse: runtimev1pb.GetBulkStateResponse{
+				Items: []*runtimev1pb.BulkStateItem{
+					{
+						Key:  "good-key",
+						Data: []byte("test-data"),
+						Etag: "test-etag",
+					},
+					{
+						Key:   "error-key",
+						Error: "failed to get state with error-key",
+					},
+				},
+			},
+			expectedError: codes.OK,
+		},
+		{
+			testName:      "get store with non-existing store",
+			storeName:     "no-store",
+			keys:          []string{"good-key"},
+			errorExcepted: true,
+			expectedResponse: runtimev1pb.GetBulkStateResponse{
+				Items: []*runtimev1pb.BulkStateItem{{
+					Error: "blah",
+				}},
+			},
+			expectedError: codes.InvalidArgument,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.testName, func(t *testing.T) {
+			req := &runtimev1pb.GetBulkStateRequest{
+				StoreName: tt.storeName,
+				Keys:      tt.keys,
+			}
+
+			resp, err := client.GetBulkState(context.Background(), req)
+			if !tt.errorExcepted {
+				assert.NoError(t, err, "Expected no error")
+				assert.Equal(t, *resp, tt.expectedResponse, "Expected responses to be same")
+			} else {
+				assert.Error(t, err, "Expected error")
+				assert.Equal(t, tt.expectedError, status.Code(err))
+			}
+		})
+	}
+}
+
 func TestDeleteState(t *testing.T) {
 	fakeStore := &daprt.MockStateStore{}
 	fakeStore.On("Delete", mock.MatchedBy(func(req *state.DeleteRequest) bool {
@@ -1183,7 +1288,7 @@ func TestExecuteStateTransaction(t *testing.T) {
 		{
 			testName:      "delete operation",
 			storeName:     "store1",
-			operation:     state.Upsert,
+			operation:     state.Delete,
 			key:           "good-key",
 			errorExcepted: false,
 			expectedError: codes.OK,

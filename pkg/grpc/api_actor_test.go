@@ -7,6 +7,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/dapr/dapr/pkg/actors"
@@ -124,6 +125,80 @@ func TestGetActorState(t *testing.T) {
 		// assert
 		assert.Nil(t, err)
 		assert.Equal(t, data, res.Data)
+		mockActors.AssertNumberOfCalls(t, "GetState", 1)
+	})
+
+	t.Run("Get actor state - Instance Missing", func(t *testing.T) {
+		mockActors := new(daprt.MockActors)
+		mockActors.On("IsActorHosted", &actors.ActorHostedRequest{
+			ActorID:   "fakeActorID",
+			ActorType: "fakeActorType",
+		}).Return(func(*actors.ActorHostedRequest) bool { return false })
+
+		port, _ := freeport.GetFreePort()
+		server := startDaprAPIServer(port, &api{
+			id:    "fakeAPI",
+			actor: mockActors,
+		}, "")
+		defer server.Stop()
+
+		clientConn := createTestClient(port)
+		defer clientConn.Close()
+
+		client := runtimev1pb.NewDaprClient(clientConn)
+
+		// act
+		res, err := client.GetActorState(context.TODO(), &runtimev1pb.GetActorStateRequest{
+			ActorId:   "fakeActorID",
+			ActorType: "fakeActorType",
+			Key:       "key1",
+		})
+
+		// assert
+		assert.Nil(t, res)
+		assert.Error(t, err)
+		assert.Equal(t, "rpc error: code = Internal desc = actor instance is missing", err.Error())
+		assert.Equal(t, codes.Internal, status.Code(err))
+		mockActors.AssertNumberOfCalls(t, "GetState", 0)
+	})
+
+	t.Run("Get actor state - Actor Error", func(t *testing.T) {
+		mockActors := new(daprt.MockActors)
+		mockActors.On("GetState", &actors.GetStateRequest{
+			ActorID:   "fakeActorID",
+			ActorType: "fakeActorType",
+			Key:       "key1",
+		}).Return(nil, errors.New("test"))
+
+		mockActors.On("IsActorHosted", &actors.ActorHostedRequest{
+			ActorID:   "fakeActorID",
+			ActorType: "fakeActorType",
+		}).Return(true)
+
+		port, _ := freeport.GetFreePort()
+		server := startDaprAPIServer(port, &api{
+			id:    "fakeAPI",
+			actor: mockActors,
+		}, "")
+		defer server.Stop()
+
+		clientConn := createTestClient(port)
+		defer clientConn.Close()
+
+		client := runtimev1pb.NewDaprClient(clientConn)
+
+		// act
+		res, err := client.GetActorState(context.TODO(), &runtimev1pb.GetActorStateRequest{
+			ActorId:   "fakeActorID",
+			ActorType: "fakeActorType",
+			Key:       "key1",
+		})
+
+		// assert
+		assert.Nil(t, res)
+		assert.Error(t, err)
+		assert.Equal(t, "rpc error: code = Internal desc = error getting actor state: test", err.Error())
+		assert.Equal(t, codes.Internal, status.Code(err))
 		mockActors.AssertNumberOfCalls(t, "GetState", 1)
 	})
 }
