@@ -1,0 +1,185 @@
+openapi: "3.0.3"
+info:
+  description: "Dapr API spec"
+  version: "1.0.0"
+  title: "Dapr HTTP API"
+  license:
+    name: "MIT"
+    url: "https://github.com/dapr/dapr/blob/master/LICENSE"
+tags:
+- name: "state"
+  description: "State API"
+  externalDocs:
+    description: "Find out more"
+    url: "http://docs.dapr.org"
+paths:
+  /v1.0/state/{storename}:
+    parameters:
+      - in: "path"
+        required: true
+        schema:
+          type: string
+        name: storename
+        description: metadata.name field in the user configured state store component yaml. Please refer Dapr State Store configuration structure mentioned above.
+    put:
+      tags:
+        - "state"
+      summary: "Save state"
+      description: "This endpoint lets you save an array of state objects."
+      operationId: "post_store"
+      requestBody:
+        description: "A JSON array of state objects"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutStateRequestArray"
+      responses:
+        "204":
+          description: "State saved"
+        "400":
+          description: "State store is missing or misconfigured"
+        "500":
+          description: "An error occurred"
+    post:
+      tags:
+        - "state"
+      summary: "Save state"
+      description: "This endpoint lets you save an array of state objects."
+      operationId: "post_store"
+      requestBody:
+        description: "A JSON array of state objects"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutStateRequestArray"
+      responses:
+        "204":
+          description: "State saved"
+        "400":
+          description: "State store is missing or misconfigured"
+        "500":
+          description: "An error occurred"
+
+  /v1.0/state/{storename}/{key}:
+    get:
+      tags:
+        - "state"
+      summary: "Get state"
+      description: "This endpoint lets you get the state for a specific key."
+      operationId: "get_state"
+      parameters:
+        - in: "path"
+          required: true
+          schema:
+            type: string
+          name: storename
+          description: metadata.name field in the user configured state store component yaml. Please refer Dapr State Store configuration structure mentioned above.
+        - in: "path"
+          required: true
+          schema:
+            type: string
+          name: key
+          description: "the key of the desired state"
+        - in: "query"
+          name: consistency
+          description: "read consistency mode"
+          schema:
+            type: string
+            enum: [strong, eventual]
+        - in: "query"
+          name: metadata
+          description: "metadata as query parameters to the state store"
+          schema:
+            type: object
+          style: form
+          explode: true
+          example: '{ "metadata.partitionKey": "mypartitionKey" }'
+      responses:
+        "200": 
+          description: "Get state successful"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetStateResponse"
+        "204":
+          description: "Key is not found"
+        "400":
+          description: "State store is missing or misconfigured"
+        "500":
+          description: "An error occurred"
+    delete:
+      tags:
+        - "state"
+      summary: "Delete state"
+      description: "This endpoint lets you delete the state for a specific key."
+      operationId: "delete_state"
+      parameters:
+        - in: "path"
+          required: true
+          schema:
+            type: string
+          name: storename
+          description: metadata.name field in the user configured state store component yaml. Please refer Dapr State Store configuration structure mentioned above.
+        - in: "path"
+          required: true
+          schema:
+            type: string
+          name: key
+          description: "the key of the desired state"
+        - in: "query"
+          name: consistency
+          description: "read consistency mode"
+          schema:
+            type: string
+            enum: [strong, eventual]
+        - in: "query"
+          name: concurrencty
+          description: "metadata as query parameters to the state store"
+          schema:
+            type: string
+            enum: [first-write, last-write]
+      responses:
+        "200": 
+          description: "Get state successful"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetStateResponse"
+        "204":
+          description: "Key is not found"
+        "400":
+          description: "State store is missing or misconfigured"
+        "500":
+          description: "An error occurred"
+
+components:
+  schemas:
+    PutStateRequest:
+      type: "object"
+      properties:
+        key:
+          type: "string"
+          description: "state key"
+        value:
+          type: "string"
+          description: "state value, which can be any byte array"
+        etag:
+          description: "state ETag"
+          type: "string"
+        metadata:
+          description: "additional key-value pairs to be passed to the state store"
+          type: "object"
+        options:
+          description: "state operation options, see state operation options"
+          type: "string"
+      required:
+        - key
+        - value
+    PutStateRequestArray:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/PutStateRequest"
+    GetStateResponse:
+      type: "object"
