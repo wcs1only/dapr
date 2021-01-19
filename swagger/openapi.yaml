@@ -6,6 +6,8 @@ info:
   license:
     name: "MIT"
     url: "https://github.com/dapr/dapr/blob/master/LICENSE"
+servers:
+  - url: "http://127.0.0.1:5000"
 tags:
 - name: "state"
   description: "State API"
@@ -26,7 +28,7 @@ paths:
         - "state"
       summary: "Save state"
       description: "This endpoint lets you save an array of state objects."
-      operationId: "post_store"
+      operationId: "put_store"
       requestBody:
         description: "A JSON array of state objects"
         required: true
